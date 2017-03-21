@@ -104,6 +104,67 @@ public class MySSHServer {
 
                           }
                       }
+                      if(lenh.numArg()==2){
+                          switch (lenh.getCommand()){
+                              case "delete" :
+                                  boolean t1=ThucHienLenh.deleteFile(lenh.getArg1());
+                                  if(t1==true){
+                                      os.write("Xóa file thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }else{
+                                      os.write("Không thành công!! File không tồn tại");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }
+                              case "create" :
+                                  boolean t2=ThucHienLenh.createFile(lenh.getArg1());
+                                  if(t2==true){
+                                      os.write("Tạo file thành công!!!!");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }else{
+                                      os.write("Tạo file không thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }
+                              case "createdir":
+                                  boolean t3=ThucHienLenh.createDirectory(lenh.getArg1());
+                                  if(t3==true){
+                                      os.write("Tạo thư mục thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }else{
+                                      os.write("Tạo thư mục không thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }
+                              case "deletedir" :
+                                  boolean t4=ThucHienLenh.deleteDirectory(lenh.getArg1());
+                                  if(t4==true){
+                                      os.write("Xóa thư mục thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }else{
+                                      os.write("Xóa thư mục không thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }
+                              default:
+                                  os.write("lệnh không đúng");
+                                  os.newLine();
+                                  os.flush();
+
+                          }
+                      }
 
                 }else{
                         this.numberSoket--;

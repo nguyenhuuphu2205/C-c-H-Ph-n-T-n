@@ -21,7 +21,7 @@ public class MySSHClient {
             System.out.println(is.readLine());
             System.out.println(ThucHienLenh.help());
         }catch (UnknownHostException e1){
-            e1.printStackTrace();
+            System.out.println("Kết nối thất bại. Not found 404!");
 
         }catch(IOException e){
             e.printStackTrace();
