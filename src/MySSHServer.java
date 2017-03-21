@@ -165,6 +165,40 @@ public class MySSHServer {
 
                           }
                       }
+                      if(lenh.numArg()==3){
+                          switch (lenh.getCommand()){
+                              case "move":
+                                  boolean t1=ThucHienLenh.moveFile(lenh.getArg1(),lenh.getArg2());
+                                  if(t1==true){
+                                      os.write("Di chuyển file thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }else{
+                                      os.write("Di chuyển file không thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }
+                              case "movedir":
+                                  boolean t2=ThucHienLenh.moveDirectory(new File(lenh.getArg1()),new File(lenh.getArg2()));
+                                  if(t2==true){
+                                      os.write("Di chuyển thư mục thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }else{
+                                      os.write("Di chuyển thư mục không thành công");
+                                      os.newLine();
+                                      os.flush();
+                                      break;
+                                  }
+                              default:
+                                  os.write("Lệnh không đúng");
+                                  os.newLine();
+                                  os.flush();
+                          }
+                      }
 
                 }else{
                         this.numberSoket--;
