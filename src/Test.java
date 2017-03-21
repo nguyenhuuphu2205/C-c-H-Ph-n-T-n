@@ -70,6 +70,8 @@ public class Test {
 //        System.out.println(lenh.getArg1()+"#"+lenh.getArg1().length());
 //        System.out.println(lenh.getArg2()+"#"+lenh.getArg2().length());
         System.out.println("sos tham số:"+lenh.numArg());
+        boolean t1 =ThucHienLenh.moveFile("login.txt","test");
+        System.out.println(t1);
 
 
 

@@ -1,6 +1,7 @@
 import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
@@ -9,7 +10,9 @@ import java.util.Scanner;
  * Created by nguyenhuuphu on 16-Mar-17.
  */
 public class MySSHClient {
+
     public static void main(String[] args) {
+        MaHoa rsa=new MaHoa(1024);
         Socket socketClient=null;
         BufferedWriter os=null;
         BufferedReader is=null;
@@ -24,7 +27,9 @@ public class MySSHClient {
             System.out.println("Kết nối thất bại. Not found 404!");
 
         }catch(IOException e){
-            e.printStackTrace();
+            System.out.println("Kết nối thất bại. Not found 404!");
+            System.exit(0);
+
         }
         try{
             String lenh=null;
@@ -35,12 +40,14 @@ public class MySSHClient {
 
                         lenh = scanner.nextLine();
 
-                        os.write(lenh);
+                        String maHoaLenh=rsa.encrypt((new BigInteger(lenh.getBytes()))).toString();
+                        os.write(maHoaLenh);
                         os.newLine();
                         os.flush();
-                       System.out.println(is.readLine());
+
+                        System.out.println(is.readLine());
                         if(lenh.equals("exit")){
-                            os.write("exit");
+                            os.write(rsa.encrypt1("exit"));
                             os.newLine();
                             os.flush();
 
@@ -53,22 +60,6 @@ public class MySSHClient {
 
                     }
 
-                    while ((response = is.readLine()) != null) {
-                        System.out.println("Server response:" + response);
-                        if(lenh.equals("EXIT")){
-                            response = is.readLine();
-                            System.out.println("Server response:" + response);
-                            System.exit(1);
-                        }
-
-                        if (response.indexOf("OK") != -1) {
-                            System.exit(1);
-                            os.close();
-                            is.close();
-
-                        }
-
-                    }
 
 
 

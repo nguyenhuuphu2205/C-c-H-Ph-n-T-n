@@ -109,7 +109,7 @@ public class ThucHienLenh {
      */
     public static boolean moveFile(String filename,String directory){
         File file=new File(filename);
-        boolean t =file.renameTo(new File(directory));
+        boolean t =file.renameTo(new File(directory+"\\"+file.getName()));
         return t;
 
     }
@@ -158,10 +158,10 @@ public class ThucHienLenh {
                 return false;
             }
         }
-        return false;
+        return true;
     }
     public static String help(){
-        String help="show : \t\t\t\tHiển thị thư mục hiện hành.\n" +
+        String help="login -username -password:\t\t\t\tĐăng nhập\nshow : \t\t\t\tHiển thị thư mục hiện hành.\n" +
                 "ls: \t\t\t\tHiển thị danh sách tệp trong thư mục hiện tại\n" +
                 "showdir: \t\t\tHiện thị danh sách thư mục trong thư mục hiện hành.\n" +
                 "time: \t\t\t\tHiển thị thời gian hiện tại của hệ thống.\n" +
@@ -175,7 +175,7 @@ public class ThucHienLenh {
         return help;
     }
     /*
-
+        Kiểm tra đăng nhập
      */
     public static boolean login(String username,String password){
             ArrayList<String>listuser=new ArrayList<String>();
