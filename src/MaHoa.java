@@ -16,10 +16,8 @@ public class MaHoa {
         n = p.multiply(q);
         BigInteger m = (p.subtract(BigInteger.ONE)).multiply(q
                 .subtract(BigInteger.ONE));
-        e = new BigInteger("3");
-        while (m.gcd(e).intValue() > 1) {
-            e = e.add(new BigInteger("2"));
-        }
+        e = new BigInteger("17");
+
         d = e.modInverse(m);
     }
 
@@ -62,9 +60,7 @@ public class MaHoa {
 
         String text2 = new String(plaintext.toByteArray());
         System.out.println("Plaintext: " + text2);
-        String test=rsa.encrypt1("ls");
-        System.out.println(test);
-        System.out.println(rsa.decrypt1(test,1996));
+
     }
 }
 

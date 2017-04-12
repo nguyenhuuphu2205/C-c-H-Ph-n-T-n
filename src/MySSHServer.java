@@ -29,7 +29,7 @@ public class MySSHServer {
                 }else {
                     Socket soketOfServer=listener.accept();
                     System.out.println(clientNumber);
-                    new ServiceThread(soketOfServer, ++clientNumber).start();
+                    new ServiceThread(soketOfServer, ++clientNumber,listener).start();
 
                 }
             }
@@ -42,12 +42,14 @@ public class MySSHServer {
         System.out.println(message);
     }
     public static  class ServiceThread extends Thread{
+        private ServerSocket listener;
         private Socket socket;
         private int numberSoket;
 
-        public ServiceThread(Socket socket,int numberSocket){
+        public ServiceThread(Socket socket,int numberSocket,ServerSocket listener){
             this.numberSoket=numberSocket;
             this.socket=socket;
+            this.listener=listener;
             log("New connection with client:"+this.numberSoket+"at"+socket);
         }public void run(){
             MaHoa rsa=new MaHoa(1024);
@@ -55,6 +57,8 @@ public class MySSHServer {
                 boolean dangnhap=false;
                 BufferedReader is=new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 BufferedWriter os=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                OutputStream os1 = socket.getOutputStream();
+                InputStream is1=socket.getInputStream();
 
 
                 os.write("Chấp nhận kết nối");
@@ -64,6 +68,8 @@ public class MySSHServer {
                 os.newLine();
                 os.flush();
                 while(true){
+
+
                     String line=null;
                     line=is.readLine();
                    // System.out.println(line);
@@ -198,6 +204,7 @@ public class MySSHServer {
                                 }
                             }
                             if (lenh.numArg() == 3) {
+
                                 switch (lenh.getCommand()) {
                                     case "move":
                                         boolean t1 = ThucHienLenh.moveFile(lenh.getArg1(), lenh.getArg2());
@@ -228,6 +235,56 @@ public class MySSHServer {
                                     case "login":
                                         boolean t3 = ThucHienLenh.login(lenh.getArg1(), lenh.getArg2());
                                         break;
+                                    case "download":
+
+                                        File myFile = new File (lenh.getArg2());
+                                        byte [] mybytearray  = new byte [(int)myFile.length()];
+                                        FileInputStream fis = new FileInputStream(myFile);
+                                        BufferedInputStream bis = new BufferedInputStream(fis);
+                                        bis.read(mybytearray,0,mybytearray.length);
+//                                        OutputStream os1 = socket.getOutputStream();
+                                        System.out.println("Sending " + "(" + mybytearray.length + " bytes)");
+                                        os1.write(mybytearray,0,mybytearray.length);
+                                        os1.flush();
+                                        os1.flush();
+                                        System.out.println("Done.");
+                                       bis.close();
+                                       fis.close();
+
+
+                                    os1.close();
+//
+                                        break;
+                                    case "upload":
+                                        int current1=0;
+                                        byte [] mybytearray1  = new byte [10000000];
+                                        FileOutputStream fos = new FileOutputStream(lenh.getArg2());
+                                        BufferedOutputStream bos = new BufferedOutputStream(fos);
+
+//                                        InputStream is1=socket.getInputStream();
+                                        int bytesRead1 = is1.read(mybytearray1,0,mybytearray1.length);
+
+                                        current1 = bytesRead1;
+                                        do {
+                                            bytesRead1 =
+                                                    is1.read(mybytearray1, current1, (mybytearray1.length-current1));
+                                            if(bytesRead1 >= 0) current1 += bytesRead1;
+                                        } while(bytesRead1 > -1);
+
+
+                                        bos.write(mybytearray1, 0 , current1);
+                                        bos.flush();
+                                        //delete(mybytearray);
+                                        System.out.println("File " + lenh.getArg1()
+                                                + " downloaded (" + current1 + " bytes read)");
+
+                                        bos.close();
+                                        fos.close();
+                                        is1.close();
+                                        break;
+
+
+
                                     default:
                                         os.write(("Lệnh không đúng"));
                                         os.newLine();
@@ -247,6 +304,7 @@ public class MySSHServer {
                         }
 
                 }else{
+
                         this.numberSoket--;
                     }
                 }
