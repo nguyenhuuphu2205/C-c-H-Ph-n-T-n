@@ -2,45 +2,58 @@ import java.io.*;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 /**
  * Created by nguyenhuuphu on 16-Mar-17.
  */
 public class MySSHServer {
-     private int clientNumber=0;
-    public static void main(String[] args) throws IOException {
+     private int clientNumberConnected=0;
+    public  static void main(String[] args) throws IOException {
 
-        ServerSocket listener=null;
+        ServerSocket listener = null;
 
         System.out.println("Server is waiting to user accept");
-        int clientNumber=0;
-        try{
-            listener=new ServerSocket(8080);
-        }catch (IOException e){
+
+        ArrayList<Thread> arrayThread = new ArrayList<Thread>();
+        try {
+            listener = new ServerSocket(8080);          //Lắng nghe trên cổng 8080
+        } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
         }
-        try{
-            while(true){
+        try {
 
+            while (true) {
 
-                if(clientNumber>3){
-                    listener.close();
-                }else {
-                    Socket soketOfServer=listener.accept();
-                    System.out.println(clientNumber);
-                    new ServiceThread(soketOfServer, ++clientNumber,listener).start();
+                /*
+                    Kiểm tra số kết nối hiện tại nếu kết nối quá 4 thì không cho kết nối
+                 */
+                if (MySSHServer.countThread(arrayThread) > 3) {
 
+                } else {
+                    Socket soketOfServer = listener.accept();
+                    ServiceThread serviceThread = new ServiceThread(soketOfServer, MySSHServer.countThread(arrayThread) + 1, listener);
+                    arrayThread.add(serviceThread);
+                    serviceThread.start();
                 }
             }
-        }finally {
+        }catch(Exception e){
+            System.out.println("Đã kết thúc 1 kết nối");
+    }finally {
             listener.close();
         }
 
     }
+    /*
+        Hàm ghi log ra màn hình
+     */
     public static void log(String message){
         System.out.println(message);
     }
+    /*
+        Định nghĩa 1 Thread chính để làm việc giữa client và server
+     */
     public static  class ServiceThread extends Thread{
         private ServerSocket listener;
         private Socket socket;
@@ -50,90 +63,89 @@ public class MySSHServer {
             this.numberSoket=numberSocket;
             this.socket=socket;
             this.listener=listener;
-            log("New connection with client:"+this.numberSoket+"at"+socket);
+            log("New connection with client:"+this.numberSoket+" at"+socket);
         }public void run(){
             MaHoa rsa=new MaHoa(1024);
             try{
                 boolean dangnhap=false;
                 BufferedReader is=new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 BufferedWriter os=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-                OutputStream os1 = socket.getOutputStream();
-                InputStream is1=socket.getInputStream();
-
-
                 os.write("Chấp nhận kết nối");
-
                 System.out.println("số kết nối hiện tại:"+(numberSoket));
-
                 os.newLine();
                 os.flush();
                 while(true){
-
-
                     String line=null;
                     line=is.readLine();
-                   // System.out.println(line);
-                    String lineGiaiMa=new String(rsa.decrypt(new BigInteger(line),1996).toByteArray());
-                    System.out.println(lineGiaiMa);
+                    String lineGiaiMa=new String(rsa.decrypt(new BigInteger(line),1996).toByteArray());     //Giải mã lệnh
                     line=lineGiaiMa;
                     if(line.equals("exit")){
                         numberSoket=numberSoket-1;
                     }
 
-                   // System.out.println("Nhan duoc lenh:"+line);
-
                     if(line!=null){
-                        Lenh lenh=ThucHienLenh.phanTichLenh(line);
+                        Lenh lenh=ThucHienLenh.phanTichLenh(line);          //Phân tích lệnh
                         if(lenh.getCommand().equals("login")){
-                            //boolean temp=ThucHienLenh.login(lenh.getArg1(),lenh.getArg2());
                             boolean temp=ThucHienLenh.login(lenh.getArg1(),lenh.getArg2());
                             if(temp==true){
                                 dangnhap=true;
-                               // String reply=rsa.encrypt1("Đăng nhập thành công !!!");
                                 os.write("Đăng nhập thành công!!!");
                                 os.newLine();
                                 os.flush();
-
                             }else{
                                 dangnhap=false;
                                 os.write("username hoặc password không đúng");
                                 os.newLine();
                                 os.flush();
                             }
-
-
                         }
-                        if(dangnhap==true) {
+                        if(dangnhap==true) {                //Kiểm tra đăng nhập
+
+                            /*
+                                Xử lý lệnh 1 tham số
+                             */
                             if (lenh.numArg() == 1) {
                                 switch (lenh.getCommand()) {
+                                    /*
+                                        Hiển thị thư mục hiện tại
+                                     */
                                     case "showdir":
                                         os.write(ThucHienLenh.showDirectoryInDirectory());
                                         os.newLine();
                                         os.flush();
                                         break;
+                                    /*
+                                        Hiển thị thời gian của hệ thống
+                                     */
                                     case "time":
                                         os.write(ThucHienLenh.showDateTime());
                                         os.newLine();
                                         os.flush();
                                         break;
+                                    /*
+                                        Hiển thị thư mục hiện tại
+                                     */
                                     case "show":
                                         os.write(ThucHienLenh.showDirectory());
                                         os.newLine();
                                         os.flush();
                                         break;
+                                    /*
+                                        Hiển thị danh sách các file trong thư mục hiện tại
+                                     */
                                     case "ls":
                                         os.write((ThucHienLenh.showFile().toString()));
                                         os.newLine();
                                         os.flush();
                                         break;
+                                    /*
+                                        Thoát chương trình
+                                     */
                                     case "exit":
                                         numberSoket--;
                                         os.write(("OK"));
                                         os.newLine();
                                         os.flush();
-                                        break;
-                                    case "delete*":
-                                        System.out.println(line);
                                         break;
                                     default:
                                         os.write(("Lệnh không đúng"));
@@ -142,8 +154,15 @@ public class MySSHServer {
 
                                 }
                             }
+
+                            /*
+                                Xử lý lệnh 2 tham số
+                             */
                             if (lenh.numArg() == 2) {
                                 switch (lenh.getCommand()) {
+                                    /*
+                                        Xóa file
+                                     */
                                     case "delete":
                                         boolean t1 = ThucHienLenh.deleteFile(lenh.getArg1());
                                         if (t1 == true) {
@@ -157,6 +176,9 @@ public class MySSHServer {
                                             os.flush();
                                             break;
                                         }
+                                     /*
+                                            Tạo File
+                                         */
                                     case "create":
                                         boolean t2 = ThucHienLenh.createFile(lenh.getArg1());
                                         if (t2 == true) {
@@ -170,6 +192,9 @@ public class MySSHServer {
                                             os.flush();
                                             break;
                                         }
+                                    /*
+                                        Tạo thư mục
+                                         */
                                     case "createdir":
                                         boolean t3 = ThucHienLenh.createDirectory(lenh.getArg1());
                                         if (t3 == true) {
@@ -183,6 +208,9 @@ public class MySSHServer {
                                             os.flush();
                                             break;
                                         }
+                                    /*
+                                        Xóa thư mục
+                                         */
                                     case "deletedir":
                                         boolean t4 = ThucHienLenh.deleteDirectory(lenh.getArg1());
                                         if (t4 == true) {
@@ -203,9 +231,16 @@ public class MySSHServer {
 
                                 }
                             }
+
+                            /*
+                                Xử lý lệnh 3 tham số
+                             */
                             if (lenh.numArg() == 3) {
 
                                 switch (lenh.getCommand()) {
+                                    /*
+                                        Di chuyển file
+                                     */
                                     case "move":
                                         boolean t1 = ThucHienLenh.moveFile(lenh.getArg1(), lenh.getArg2());
                                         if (t1 == true) {
@@ -219,9 +254,12 @@ public class MySSHServer {
                                             os.flush();
                                             break;
                                         }
+                                    /*
+                                        Di chuyển thư mục
+                                         */
                                     case "movedir":
                                         boolean t2 = ThucHienLenh.moveDirectory(new File(lenh.getArg1()), new File(lenh.getArg2()));
-                                        if (t2 == false) {
+                                        if (t2 == true) {
                                             os.write(("Di chuyển thư mục thành công"));
                                             os.newLine();
                                             os.flush();
@@ -232,60 +270,74 @@ public class MySSHServer {
                                             os.flush();
                                             break;
                                         }
+                                        /*
+                                            login
+                                         */
                                     case "login":
                                         boolean t3 = ThucHienLenh.login(lenh.getArg1(), lenh.getArg2());
                                         break;
+                                    /*
+                                        Download File từ server về client
+                                     */
                                     case "download":
 
-                                        File myFile = new File (lenh.getArg2());
-                                        byte [] mybytearray  = new byte [(int)myFile.length()];
-                                        FileInputStream fis = new FileInputStream(myFile);
-                                        BufferedInputStream bis = new BufferedInputStream(fis);
-                                        bis.read(mybytearray,0,mybytearray.length);
-//                                        OutputStream os1 = socket.getOutputStream();
-                                        System.out.println("Sending " + "(" + mybytearray.length + " bytes)");
-                                        os1.write(mybytearray,0,mybytearray.length);
-                                        os1.flush();
-                                        os1.flush();
-                                        System.out.println("Done.");
-                                       bis.close();
-                                       fis.close();
-
-
-                                    os1.close();
+                                        File file=new File(lenh.getArg2());
+                                        if(!file.exists()){                     //Kiểm tra file có tồn tại không
+                                            os.write("FileKhongTonTai");
+                                            os.newLine();
+                                            os.flush();
+                                        }
+                                        if(file.exists()&&file.isFile()) {
+                                            /*
+                                            Kiểm tra file có thích lớn, nếu file có kích thước lớn hơn 10KB thì cắt file làm 3 phần và download từng phần riêng biệt về
+                                             */
+                                            if (file.length() / 1024 > 10) {
+                                                os.write("FileMax");
+                                                os.newLine();
+                                                os.flush();
 //
+                                        /*
+                                            Thực hiện cắt file làm 3 phần trước khi download
+                                         */
+                                                ThucHienLenh.splitFile(lenh.getArg2(), "split", 3);
+                                        /*
+                                            Gửi từng file  nhỏ dần dần trên đường truyền thông qua 3 Thread
+                                         */
+                                                for (int temp = 0; temp < 3; temp++) {
+                                                    new SendFileThread("split." + temp, temp + 1).start();
+                                                }
+
+                                                Thread.sleep(5000);
+                                        /*
+                                        Xóa các file đã cắt khi hoàn thành việc download
+                                         */
+                                                for (int temp = 0; temp < 3; temp++) {
+                                                    ThucHienLenh.deleteFile("split." + temp);
+                                                }
+                                            }else{
+                                                os.write("FileMin");
+                                                os.newLine();
+                                                os.flush();
+                                                new SendFileThread(lenh.getArg2(),1).start();
+                                            }
+
+                                        }
+
                                         break;
-                                    case "upload":
-                                        int current1=0;
-                                        byte [] mybytearray1  = new byte [10000000];
-                                        FileOutputStream fos = new FileOutputStream(lenh.getArg2());
-                                        BufferedOutputStream bos = new BufferedOutputStream(fos);
-
-//                                        InputStream is1=socket.getInputStream();
-                                        int bytesRead1 = is1.read(mybytearray1,0,mybytearray1.length);
-
-                                        current1 = bytesRead1;
-                                        do {
-                                            bytesRead1 =
-                                                    is1.read(mybytearray1, current1, (mybytearray1.length-current1));
-                                            if(bytesRead1 >= 0) current1 += bytesRead1;
-                                        } while(bytesRead1 > -1);
-
-
-                                        bos.write(mybytearray1, 0 , current1);
-                                        bos.flush();
-                                        //delete(mybytearray);
-                                        System.out.println("File " + lenh.getArg1()
-                                                + " downloaded (" + current1 + " bytes read)");
-
-                                        bos.close();
-                                        fos.close();
-                                        is1.close();
-                                        break;
-
-
-
-                                    default:
+                                        /*
+                                            Upload file lên server
+                                         */
+                                        case "upload":
+                                                os.write("Yes");
+                                                os.newLine();
+                                                os.flush();
+                                                if(is.readLine().equals("Yes")) {
+                                                    ThucHienLenh.nhanFile(lenh.getArg2(), 1);
+                                                    break;
+                                                }else{
+                                                    break;
+                                                }
+                                       default:
                                         os.write(("Lệnh không đúng"));
                                         os.newLine();
                                         os.flush();
@@ -310,11 +362,60 @@ public class MySSHServer {
                 }
 
             }catch(IOException e){
-                System.out.println(e);
+                System.out.println("Đã kết thúc 1 kết nối:"+socket);
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+    }
 
+    /*
+        Hàm đếm số lượng client đăng nhập
+     */
+    public static int countThread(ArrayList<Thread> arr){
+        int count=0;
+        for(int i=0;i<arr.size();i++){
+            if(arr.get(i).isAlive()){
+                count++;
+            }
 
+        }
+        return count;
+    }
+    /*
+        Định nghĩa 1 class  Thread để gửi File qua Soket
+     */
+    public  static class SendFileThread extends Thread{
+        private int port;
+        private String filename;
+        public SendFileThread(String filename,int port)
+        {
+            this.port=port;
+            this.filename=filename;
+        }
+        public void run(){
+            try {
+                ThucHienLenh.guiFile(this.filename,port);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    /*
+        Định nghĩa 1 class Thread để nhận File qua Soket
+     */
+    public static class ReceiveThread extends Thread{
+        private int port;
+        private String filename;
+        public ReceiveThread(String filename,int port)
+        {
+            this.port=port;
+            this.filename=filename;
+        }
+        public void run(){
+            ThucHienLenh.nhanFile(this.filename,port);
+            ReceiveThread.interrupted();
+
+        }
     }
 }

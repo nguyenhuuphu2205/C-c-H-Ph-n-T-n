@@ -20,47 +20,38 @@ public class MaHoa {
 
         d = e.modInverse(m);
     }
-
-    public    BigInteger encrypt(BigInteger message) {
+    /*
+        Hàm mã hóa
+     */
+    public BigInteger encrypt(BigInteger message) {
         return message.modPow(e, n);
     }
-    public String encrypt1(String message){
-        BigInteger bigInteger =new BigInteger(message.getBytes());
-        return bigInteger.modPow(e,n).toString();
+    /*
+        Hàm mã hóa
+     */
+    public String encrypt1(String message) {
+        BigInteger bigInteger = new BigInteger(message.getBytes());
+        return bigInteger.modPow(e, n).toString();
 
     }
-    public String decrypt1(String message,int mamat){
-        if(mamat==1996) {
-            BigInteger bigInteger=new BigInteger(message);
+    /*
+            Hàm giải mã
+     */
+    public String decrypt1(String message, int mamat) {
+        if (mamat == 1996) {
+            BigInteger bigInteger = new BigInteger(message);
             return new String(bigInteger.modPow(d, n).toByteArray());
-        }else
+        } else
             return "123456789";
 
     }
-
-
-    public    BigInteger decrypt(BigInteger message,int mamat) {
-        if(mamat==1996) {
+    /*
+            Hàm giải mã
+     */
+    public BigInteger decrypt(BigInteger message, int mamat) {
+        if (mamat == 1996) {
             return message.modPow(d, n);
-        }else
+        } else
             return new BigInteger("123456789");
     }
-
-
-    public static void main(String[] args) {
-        MaHoa rsa = new MaHoa(1024);
-
-        String text1 = "ls";
-        System.out.println("Plaintext: " + text1);
-        BigInteger plaintext = new BigInteger(text1.getBytes());
-
-        BigInteger ciphertext = rsa.encrypt(plaintext);
-        System.out.println("Ciphertext: " + ciphertext);
-        plaintext = rsa.decrypt(ciphertext,1996);
-
-        String text2 = new String(plaintext.toByteArray());
-        System.out.println("Plaintext: " + text2);
-
-    }
 }
-

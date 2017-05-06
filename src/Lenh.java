@@ -5,8 +5,6 @@ public class Lenh {
     private String command;
     private String arg1;
     private String arg2;
-
-
     public Lenh(String command, String arg1, String arg2) {
         this.command = command;
         this.arg1 = arg1;

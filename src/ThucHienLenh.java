@@ -1,4 +1,7 @@
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+
 import java.io.*;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -7,6 +10,15 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import static java.lang.Thread.sleep;
 
 /**
  * Created by nguyenhuuphu on 16-Mar-17.
@@ -21,18 +33,13 @@ public class ThucHienLenh {
         String currentDir=null;
         try {
             String current = new java.io.File(".").getCanonicalPath();
-            System.out.println("Current dir:" + current);
              currentDir = System.getProperty("user.dir");
-            System.out.println("Current dir using System:" + currentDir);
 
         }catch(IOException e){
             e.printStackTrace();
         }
         return currentDir;
     }
-
-
-
     /*
     Hiện thị danh dách file trong thư mục hiện thời
      */
@@ -43,7 +50,6 @@ public class ThucHienLenh {
         for (File file : filesList) {
             if (file.isFile()) {
                 danhSachFile.add(file.getName());
-                System.out.println("File:"+file.getName());
             }
         }
         return danhSachFile;
@@ -61,7 +67,6 @@ public class ThucHienLenh {
                 return new File(current, name).isDirectory();
             }
         });
-        System.out.println(Arrays.toString(directories));
         return Arrays.toString(directories);
     }
 
@@ -127,13 +132,16 @@ public class ThucHienLenh {
      */
     public static boolean deleteDirectory(String directory){
         File myFile=new File(directory);
-        String []array=myFile.list();
-        for(String s:array){
-            File file=new File(myFile.getPath(),s);
-            file.delete();
+        if(myFile.exists()&&myFile.isDirectory()) {
+            String[] array = myFile.list();
+            for (String s : array) {
+                File file = new File(myFile.getPath(), s);
+                file.delete();
+            }
+            return myFile.delete();
+        }else{
+            return false;
         }
-        return myFile.delete();
-
 
 
     }
@@ -148,6 +156,7 @@ public class ThucHienLenh {
             {
                 moveDirectory(file, new File(destFile.getPath(),file.getName()));
             }
+            return true;
         }
         else
         {
@@ -158,8 +167,11 @@ public class ThucHienLenh {
                 return false;
             }
         }
-        return true;
+
     }
+    /*
+            Hiển thị các lệnh mà hệ thống hỗ trợ
+     */
     public static String help(){
         String help="login -username -password:\t\t\t\tĐăng nhập\nshow : \t\t\t\tHiển thị thư mục hiện hành.\n" +
                 "ls: \t\t\t\tHiển thị danh sách tệp trong thư mục hiện tại\n" +
@@ -171,11 +183,13 @@ public class ThucHienLenh {
                 "createdir -directory: \t\tTạo thư mục mới\n" +
                 "deletedir -directory: \t\tXóa thư mục.\n" +
                 "movedir -source -dest: \t\tDi chuyển toàn bộ file sang thư mục khác.\n" +
+                "download --dest --source:\t\tDownload 1 file source và lưu với tên file dest\n"+
+                "upload --source --dest:\t\tUpload 1 file từ source lên server và lưu với tên file dest\n"+
                 "help:\t\t\t\tHiển thị các lệnh.";
         return help;
     }
     /*
-        Kiểm tra đăng nhập
+                Kiểm tra đăng nhập
      */
     public static boolean login(String username,String password){
             ArrayList<String>listuser=new ArrayList<String>();
@@ -206,7 +220,7 @@ public class ThucHienLenh {
         return false;
     }
     /*
-    Phân tích lệnh từ 1 chuỗi đầu vào
+                Phân tích lệnh từ 1 chuỗi đầu vào
      */
     public static Lenh phanTichLenh(String t){
         Lenh lenh=new Lenh();
@@ -238,5 +252,180 @@ public class ThucHienLenh {
         }
         return lenh;
     }
+    /*
+            Cắt 1 File thành nhiều File nhỏ
+     */
+    public static boolean splitFile(String filenameSource,String destFile,int numberSplit){
+
+            File file=new File(filenameSource);
+            if(file.exists()&&file.isFile()){
+                try {
+                    InputStream is = new FileInputStream(file);
+                    long sizefile = file.length();
+                    long sizefileSplit = sizefile / numberSplit;
+                    byte[] arr = new byte[1024];
+                    for (int i = 0; i < numberSplit; i++) {
+                        OutputStream os = new FileOutputStream(destFile+'.' + i);
+                        int j = 0;
+                        int a = 0;
+                        while ((j = is.read(arr)) != -1) {
+                            os.write(arr, 0, j);
+                            a += j;
+                            if (a > sizefileSplit) {
+                                break;
+                            }
+                        }
+                        os.flush();
+                        os.close();
+                    }
+                    is.close();
+                    return true;
+                }catch (IOException e){
+                    e.printStackTrace();
+                    return false;
+                }
+            }else{
+
+                return false;
+
+            }
+
+
+
+
+    }
+    /*
+        Ghép các File nhỏ thành 1 file
+     */
+    public static boolean merrgeFile(String filenameSource) {
+        try {
+
+
+            OutputStream os = new FileOutputStream(filenameSource);
+            int count=0;
+            byte [] arr=new byte[1024];
+            while(true){
+                File file=new File(filenameSource+"."+count);
+                if(file.exists()&&file.isFile()){
+                    InputStream is=new FileInputStream(file);
+                    int j=0;
+                    while( (j=is.read(arr))!=-1){
+                        os.write(arr,0,j);
+                    }
+                    os.flush();
+                    is.close();
+                    ThucHienLenh.deleteFile(file.getName());
+                    count++;
+                }else{
+                    break;
+                }
+            }
+            os.close();
+            return false;
+        }catch(IOException e){
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+    /*
+            Gửi 1 file thông qua 1 Socket
+     */
+    public static void guiFile(String filename ,int port) throws IOException {
+        FileInputStream fis = null;
+        BufferedInputStream bis = null;
+        OutputStream os = null;
+        ServerSocket servsock = null;
+        Socket sock = null;
+        try {
+            servsock = new ServerSocket(port+3000);
+            while (true) {
+                System.out.println("Waiting...");
+                try {
+                    sock = servsock.accept();
+                    System.out.println("Accepted connection : " + sock);
+                    // send file
+                    File myFile = new File (filename);
+                    byte [] mybytearray  = new byte [(int)myFile.length()];
+                    fis = new FileInputStream(myFile);
+                    bis = new BufferedInputStream(fis);
+                    bis.read(mybytearray,0,mybytearray.length);
+                    os = sock.getOutputStream();
+                    System.out.println("Sending " + filename + "(" + mybytearray.length + " bytes)");
+                    os.write(mybytearray,0,mybytearray.length);
+                    os.flush();
+                    System.out.println("Done.");
+                    break;
+                }
+                finally {
+                    if(fis !=null) fis.close();
+                    if (bis != null) bis.close();
+                    if (os != null) os.close();
+                    if (sock!=null) sock.close();
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (servsock != null) servsock.close();
+        }
+    }
+    /*
+        Nhận 1 File thông qua Socket
+     */
+    public static void nhanFile(String filename,int port){
+        int bytesRead;
+        int current = 0;
+        FileOutputStream fos = null;
+        BufferedOutputStream bos = null;
+        Socket sock = null;
+        try {
+            sock = new Socket("localhost", port+3000);
+            System.out.println("Connecting...");
+
+            // receive file
+            byte [] mybytearray  = new byte [1000000];
+            InputStream is = sock.getInputStream();
+            fos = new FileOutputStream(filename);
+            bos = new BufferedOutputStream(fos);
+            bytesRead = is.read(mybytearray,0,mybytearray.length);
+            current = bytesRead;
+
+            do {
+                bytesRead =
+                        is.read(mybytearray, current, (mybytearray.length-current));
+                if(bytesRead >= 0) current += bytesRead;
+            } while(bytesRead > -1);
+
+            bos.write(mybytearray, 0 , current);
+            bos.flush();
+            System.out.println("File " + filename
+                    + " downloaded (" + current + " bytes read)");
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fos != null) try {
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (bos != null) try {
+                bos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (sock != null) try {
+                sock.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
 
 }
